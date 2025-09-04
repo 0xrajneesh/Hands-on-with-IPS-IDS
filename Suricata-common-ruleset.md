@@ -13,70 +13,73 @@ alert http $HOME_NET any -> $EXTERNAL_NET any (
 
 Use to flag scripted exfil/tests using curl or wget.
 
-2) HTTP request for phpMyAdmin
+## 2) HTTP request for phpMyAdmin
+```
 alert http $EXTERNAL_NET any -> $HOME_NET any (
   msg:"Attempt to access phpMyAdmin";
   flow:established,to_server;
   http.uri; content:"/phpmyadmin"; nocase;
   classtype:web-application-attack; sid:1000002; rev:1;
 )
+```
 
 
 Catches probes hitting common admin panels.
 
-3) Basic SQLi pattern in URI/body
+## 3) Basic SQLi pattern in URI/body
+```
 alert http any any -> $HOME_NET any (
   msg:"Possible SQLi: ' OR 1=1";
   flow:established,to_server;
   http.request_line; pcre:"/'\s*OR\s*1=1/i";
   classtype:web-application-attack; sid:1000003; rev:1;
 )
-
-
+```
 Detects a classic SQL injection test string.
 
-4) Reflected XSS marker
+## 4) Reflected XSS marker
+
+```
 alert http any any -> $HOME_NET any (
   msg:"Possible XSS attempt: <script in request";
   flow:established,to_server;
   http.uri; content:"<script"; nocase;
   classtype:web-application-attack; sid:1000004; rev:1;
 )
-
-
+```
 Flags obvious cross-site scripting probes.
 
-5) Directory traversal to /etc/passwd
+## 5) Directory traversal to /etc/passwd
+```
 alert http any any -> $HOME_NET any (
   msg:"LFI/Traversal attempt to /etc/passwd";
   flow:established,to_server;
   http.uri; content:"../"; http.uri; content:"/etc/passwd"; nocase;
   classtype:web-application-attack; sid:1000005; rev:1;
 )
-
+```
 
 Catches Unix file read via traversal.
 
-6) Remote File Inclusion probe
-alert http any any -> $HOME_NET any (
+## 6) Remote File Inclusion probe
+```alert http any any -> $HOME_NET any (
   msg:"RFI attempt with http:// in parameter";
   flow:established,to_server;
   http.uri; pcre:"/\?(?:[^=]+)=https?:\/\//Ui";
   classtype:web-application-attack; sid:1000006; rev:1;
 )
-
-
+```
 Detects parameters that pull external URLs.
 
-7) Command injection hints
+## 7) Command injection hints
+```
 alert http any any -> $HOME_NET any (
   msg:"Possible command injection tokens (;|&&|`)";
   flow:established,to_server;
   http.uri; pcre:"/[;&`]\s*(?:id|whoami|wget|curl)/Ui";
   classtype:web-application-attack; sid:1000007; rev:1;
 )
-
-
+```
 Flags shell metacharacters plus common commands.
 
 8) Access to .git/ directory
