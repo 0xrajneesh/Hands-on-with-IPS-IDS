@@ -82,18 +82,20 @@ alert http any any -> $HOME_NET any (
 ```
 Flags shell metacharacters plus common commands.
 
-8) Access to .git/ directory
+## 8) Access to .git/ directory
+```
 alert http any any -> $HOME_NET any (
   msg:"Exposed .git directory access";
   flow:established,to_server;
   http.uri; content:"/.git/"; nocase;
   classtype:web-application-attack; sid:1000008; rev:1;
 )
-
+```
 
 Warns when VCS metadata is web-exposed.
 
-9) WordPress brute-force (401 bursts)
+## 9) WordPress brute-force (401 bursts)
+```
 alert http $EXTERNAL_NET any -> $HOME_NET any (
   msg:"Likely login brute-force: repeated 401s";
   flow:established,to_client;
@@ -101,11 +103,12 @@ alert http $EXTERNAL_NET any -> $HOME_NET any (
   detection_filter:track by_dst, count 10, seconds 60;
   classtype:attempted-user; sid:1000009; rev:1;
 )
-
+```
 
 Triggers when a client gets many auth failures quickly.
 
-10) Spike in 500 errors
+## 10) Spike in 500 errors
+```
 alert http $EXTERNAL_NET any -> $HOME_NET any (
   msg:"Server instability: repeated 500 responses";
   flow:established,to_client;
@@ -113,223 +116,244 @@ alert http $EXTERNAL_NET any -> $HOME_NET any (
   detection_filter:track by_src, count 20, seconds 60;
   classtype:generic-activity; sid:1000010; rev:1;
 )
-
+```
 
 Helps catch app crashes or active fuzzing.
 
-11) TLS SNI contains .onion
+## 11) TLS SNI contains .onion
+```
 alert tls $HOME_NET any -> $EXTERNAL_NET any (
   msg:"TLS SNI indicates Tor (.onion)";
   flow:established,to_server;
   tls.sni; content:".onion"; nocase;
   classtype:policy-violation; sid:1000011; rev:1;
 )
-
+```
 
 Flags possible Tor hidden service access.
 
-12) Deprecated SSLv3
+## 12) Deprecated SSLv3
+```
 alert tls $HOME_NET any -> $EXTERNAL_NET any (
   msg:"Deprecated SSLv3 negotiated";
   flow:established;
   tls.version:SSLv3;
   classtype:protocol-command-decode; sid:1000012; rev:1;
 )
-
+```
 
 Detects insecure legacy SSL usage.
 
-13) Deprecated TLS 1.0
+## 13) Deprecated TLS 1.0
+```
 alert tls $HOME_NET any -> $EXTERNAL_NET any (
   msg:"Deprecated TLS 1.0 negotiated";
   flow:established;
   tls.version:TLS1.0;
   classtype:protocol-command-decode; sid:1000013; rev:1;
 )
-
+```
 
 Identifies TLS 1.0 sessions for remediation.
 
-14) Long DNS label (exfil hint)
+## 14) Long DNS label (exfil hint)
+```
 alert dns $HOME_NET any -> $EXTERNAL_NET any (
   msg:"Very long DNS label in query";
   dns.query; pcre:"/(^|\.)[A-Za-z0-9\-]{50,}\./";
   classtype:potential-ly-dangerous; sid:1000014; rev:1;
 )
-
+```
 
 Heuristics for DNS tunneling/exfil.
 
-15) Suspicious TXT-like data in HTTP (Base64-ish)
+## 15) Suspicious TXT-like data in HTTP (Base64-ish)
+```
 alert http $HOME_NET any -> $EXTERNAL_NET any (
   msg:"Long base64-like string in URI";
   flow:established,to_server;
   http.uri; pcre:"/[A-Za-z0-9+\/]{100,}={0,2}/";
   classtype:potential-ly-dangerous; sid:1000015; rev:1;
 )
-
+```
 
 Catches encoded payloads in requests.
 
-16) SSH protocol v1 banner
+## 16) SSH protocol v1 banner
+```
 alert tcp $HOME_NET any -> $EXTERNAL_NET 22 (
   msg:"Legacy SSH-1 client usage";
   flow:to_server,established;
   content:"SSH-1."; depth:6;
   classtype:protocol-command-decode; sid:1000016; rev:1;
 )
-
+```
 
 Flags obsolete SSHv1 connections.
 
-17) Outbound SSH to Internet
+## 17) Outbound SSH to Internet
+```
 alert tcp $HOME_NET any -> $EXTERNAL_NET 22 (
   msg:"Outbound SSH from internal host";
   flags:S,12; flow:stateless;
   classtype:policy-violation; sid:1000017; rev:1;
 )
-
+```
 
 Notifies when internal users initiate SSH outside (policy).
 
-18) RDP exposure to Internet
+## 18) RDP exposure to Internet
+```
 alert tcp $HOME_NET any -> $EXTERNAL_NET 3389 (
   msg:"Outbound RDP from internal host";
   flags:S,12; flow:stateless;
   classtype:policy-violation; sid:1000018; rev:1;
 )
-
+```
 
 Detects RDP leaving your network.
 
-19) SMB ADMIN$ access attempt
+## 19) SMB ADMIN$ access attempt
+```
 alert smb any any -> $HOME_NET any (
   msg:"SMB access to ADMIN$ share";
   flow:established,to_server;
   smb.path; content:"\\ADMIN$"; nocase;
   classtype:attempted-admin; sid:1000019; rev:1;
 )
-
+```
 
 Flags administrative share usage.
 
-20) Executable over SMB (MZ header)
+## 20) Executable over SMB (MZ header)
+```
 alert smb any any -> $HOME_NET any (
   msg:"Executable file transfer over SMB";
   flow:established,to_client;
   file_data; content:"MZ"; depth:2;
   classtype:policy-violation; sid:1000020; rev:1;
 )
-
+```
 
 Spot PE downloads via SMB shares.
 
-21) FTP cleartext password seen
+## 21) FTP cleartext password seen
+```
 alert ftp $HOME_NET any -> $EXTERNAL_NET 21 (
   msg:"FTP cleartext AUTH (USER/PASS)";
   flow:established,to_server;
   ftp.command; pcre:"/^(USER|PASS)\s+/i";
   classtype:policy-violation; sid:1000021; rev:1;
 )
-
+```
 
 Highlights insecure FTP authentication.
 
-22) FTP anonymous login
+## 22) FTP anonymous login
+```
 alert ftp $HOME_NET any -> $EXTERNAL_NET 21 (
   msg:"FTP anonymous login attempt";
   flow:established,to_server;
   ftp.command; content:"USER "; nocase; pcre:"/USER\s+anonymous/i";
   classtype:attempted-recon; sid:1000022; rev:1;
 )
-
+```
 
 Detects anonymous FTP access.
 
-23) Telnet usage
+## 23) Telnet usage
+```
 alert tcp $HOME_NET any -> $EXTERNAL_NET 23 (
   msg:"Telnet usage detected";
   flags:S,12; flow:stateless;
   classtype:policy-violation; sid:1000023; rev:1;
 )
-
+```
 
 Warns on legacy plaintext remote shell.
 
-24) NTP monlist keyword
+## 24) NTP monlist keyword
+```
 alert udp $EXTERNAL_NET any -> $HOME_NET 123 (
   msg:"NTP monlist probe (legacy amplification)";
   content:"monlist"; nocase;
   classtype:attempted-recon; sid:1000024; rev:1;
 )
-
+```
 
 Catches old‐school NTP reflection checks.
 
-25) SNMP community 'public'
+## 25) SNMP community 'public'
+```
 alert udp $EXTERNAL_NET any -> $HOME_NET 161 (
   msg:"SNMP community 'public' access";
   content:"public"; nocase;
   classtype:attempted-recon; sid:1000025; rev:1;
 )
-
+```
 
 Flags default/guessable SNMP communities.
 
-26) ICMP oversized echo (exfil hint)
+## 26) ICMP oversized echo (exfil hint)
+```
 alert icmp $HOME_NET any -> $EXTERNAL_NET any (
   msg:"Large ICMP echo payload";
   itype:8; dsize:>1000;
   classtype:potential-ly-dangerous; sid:1000026; rev:1;
 )
-
+```
 
 Detects unusually large pings that may carry data.
 
-27) HTTP download of .exe
+## 27) HTTP download of .exe
+```
 alert http $HOME_NET any -> $EXTERNAL_NET any (
   msg:"HTTP request for .exe";
   flow:established,to_server;
   http.uri; endswith:".exe"; nocase;
   classtype:policy-violation; sid:1000027; rev:1;
 )
-
+```
 
 Flags executable pulls over HTTP.
 
-28) Basic Auth header present
+## 28) Basic Auth header present
+```
 alert http $HOME_NET any -> $EXTERNAL_NET any (
   msg:"HTTP Authorization: Basic in request";
   flow:established,to_server;
   http.header; content:"Authorization: Basic"; nocase;
   classtype:policy-violation; sid:1000028; rev:1;
 )
-
+```
 
 Highlights plaintext credential patterns.
 
-29) Cloud metadata service access
+## 29) Cloud metadata service access
+```
 alert http $HOME_NET any -> 169.254.169.254 any (
   msg:"Access to cloud instance metadata service";
   flow:established,to_server;
   classtype:policy-violation; sid:1000029; rev:1;
 )
-
+```
 
 Detects potential SSRF/credential harvesting to IMDS.
 
-30) Response contains /etc/passwd markers
+## 30) Response contains /etc/passwd markers
+```
 alert http $EXTERNAL_NET any -> $HOME_NET any (
   msg:"Sensitive data leak: passwd contents in response";
   flow:established,to_client;
   file_data; content:"root:x:0:0:"; nocase;
   classtype:data-loss; sid:1000030; rev:1;
 )
-
+```
 
 Catches classic Unix account file leakage.
 
-31) Repeated 403s to same client
+## 31) Repeated 403s to same client
+```
 alert http $EXTERNAL_NET any -> $HOME_NET any (
   msg:"Multiple 403 Forbidden responses to client";
   flow:established,to_client;
@@ -337,22 +361,23 @@ alert http $EXTERNAL_NET any -> $HOME_NET any (
   detection_filter:track by_dst, count 10, seconds 60;
   classtype:attempted-recon; sid:1000031; rev:1;
 )
-
+```
 
 Heuristic for path brute-forcing.
 
-32) WebDAV method usage
+## 32) WebDAV method usage
+```
 alert http any any -> $HOME_NET any (
   msg:"WebDAV method used (PROPFIND/PUT)";
   flow:established,to_server;
   http.method; pcre:"/^(PROPFIND|PUT|MKCOL|MOVE|COPY|DELETE)$/";
   classtype:policy-violation; sid:1000032; rev:1;
 )
-
+```
 
 Flags WebDAV operations often disabled by policy.
 
-33) Path traversal pattern ..%2f
+## 33) Path traversal pattern ..%2f
 alert http any any -> $HOME_NET any (
   msg:"Encoded traversal ..%2f in URI";
   flow:established,to_server;
