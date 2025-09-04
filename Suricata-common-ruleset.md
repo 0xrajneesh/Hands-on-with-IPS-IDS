@@ -378,88 +378,97 @@ alert http any any -> $HOME_NET any (
 Flags WebDAV operations often disabled by policy.
 
 ## 33) Path traversal pattern ..%2f
+```
 alert http any any -> $HOME_NET any (
   msg:"Encoded traversal ..%2f in URI";
   flow:established,to_server;
   http.uri; content:"..%2f"; nocase;
   classtype:web-application-attack; sid:1000033; rev:1;
 )
-
+```
 
 Detects encoded traversal attempts.
 
-34) PHP remote shell indicators
+## 34) PHP remote shell indicators
+```
 alert http any any -> $HOME_NET any (
   msg:"Potential PHP webshell indicator (cmd= whoami)";
   flow:established,to_server;
   http.uri; pcre:"/(?:^|[?&])cmd=(?:id|whoami|uname)/Ui";
   classtype:web-application-attack; sid:1000034; rev:1;
 )
-
+```
 
 Catches simple webshell command parameters.
 
-35) SSRF via file:// or gopher://
+## 35) SSRF via file:// or gopher://
+```
 alert http $HOME_NET any -> $EXTERNAL_NET any (
   msg:"Possible SSRF using file:// or gopher://";
   flow:established,to_server;
   http.uri; pcre:"/(file|gopher):\/\//i";
   classtype:web-application-attack; sid:1000035; rev:1;
 )
-
+```
 
 Looks for dangerous URL schemes in requests.
 
-36) Kubernetes API path exposure (unauth HTTP)
+## 36) Kubernetes API path exposure (unauth HTTP)
+```
 alert http $EXTERNAL_NET any -> $HOME_NET 8080 (
   msg:"K8s API path over plain HTTP";
   flow:established,to_server;
   http.uri; content:"/api/v1/namespaces"; nocase;
   classtype:policy-violation; sid:1000036; rev:1;
 )
-
+```
 
 Flags kube-api served over non-TLS (legacy 8080).
 
-37) Office macro-enabled doc download
+## 37) Office macro-enabled doc download
+```
 alert http $HOME_NET any -> $EXTERNAL_NET any (
   msg:"Downloading macro-enabled Office file (.docm/.xlsm)";
   flow:established,to_server;
   http.uri; pcre:"/\.(docm|xlsm|pptm)(?:\?|$)/i";
   classtype:policy-violation; sid:1000037; rev:1;
 )
-
+```
 
 Warns on macro-enabled file pulls.
 
-38) PE file in HTTP response (magic MZ)
+## 38) PE file in HTTP response (magic MZ)
+```
 alert http $EXTERNAL_NET any -> $HOME_NET any (
   msg:"PE binary in HTTP response (MZ header)";
   flow:established,to_client;
   file_data; content:"MZ"; depth:2;
   classtype:policy-violation; sid:1000038; rev:1;
 )
-
+```
 
 Detects executable content delivered over HTTP.
 
-39) Cryptocurrency miner User-Agent
+## 39) Cryptocurrency miner User-Agent
+
+```
 alert http $HOME_NET any -> $EXTERNAL_NET any (
   msg:"Mining software user-agent (xmrig)";
   flow:established,to_server;
   http.user_agent; content:"xmrig"; nocase;
   classtype:policy-violation; sid:1000039; rev:1;
 )
-
+```
 
 Spots popular CPU miner traffic.
 
-40) DNS query for RFC1918 names (odd internal leak)
+## 40) DNS query for RFC1918 names (odd internal leak)
+```
 alert dns $HOME_NET any -> $EXTERNAL_NET any (
   msg:"DNS query that looks like RFC1918 address";
   dns.query; pcre:"/^(?:10|127|172\.(?:1[6-9]|2\d|3[0-1])|192\.168)(?:\.[0-9]{1,3}){2}\.?$/";
   classtype:bad-unknown; sid:1000040; rev:1;
 )
-
+```
 
 Flags clients trying to resolve private IPs via public DNS.
