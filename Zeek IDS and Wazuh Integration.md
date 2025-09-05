@@ -216,22 +216,3 @@ sudo systemctl restart wazuh-manager
 
 ---
 
-## 10) Operations
-
-* **Daily:** Check agent status, disk usage on Zeek box, alert volumes for `zeek` tag.
-* **Weekly:** Review false positives, update Zeek packages (`zkg upgrade`), refine rules.
-* **Incident:** Pivot from Wazuh alert → filter by `uid`, `id.orig_h`, `id.resp_h` across Zeek logs.
-
----
-
-## 11) Timeline (Example)
-
-* **Day 1:** Install agent; add localfile; restart components.
-* **Day 2:** Add rules, build dashboard panels.
-* **Day 3:** Validation & tuning; handover.
-
----
-
-## 12) Next Steps
-
-Share your Wazuh version and Zeek log paths; I’ll tailor decoders/rules to your schema and ship ready-to-import XML files.
